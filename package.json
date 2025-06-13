@@ -1,0 +1,21 @@
+{
+  "name": "writeguard",
+  "version": "1.0.0",
+  "description": "Asistente de escritura en español",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@nlpjs/lang-es": "^5.0.0-alpha.5",
+    "@nlpjs/nlp": "^5.0.0-alpha.5",
+    "axios": "^1.9.0",
+    "clipboardy": "^4.0.0",
+    "fastest-levenshtein": "^1.0.16",
+    "natural": "^6.10.5",
+    "node-global-key-listener": "^0.3.0"
+  },
+  "devDependencies": {
+    "electron": "^28.2.0"
+  }
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WriteGuard - Prueba de Corrección</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .error {
+            text-decoration: wavy underline red;
+            cursor: pointer;
+        }
+
+        .suggestions-panel {
+            display: none;
+            position: fixed;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .suggestion-item {
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background: #f0f0f0;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .status.active {
+            background: #e6ffe6;
+            color: #006600;
+        }
+
+        .status.inactive {
+            background: #ffe6e6;
+            color: #660000;
+        }
+    </style>
+</head>
+<body>
+    <h1>WriteGuard - Prueba de Corrección</h1>
+    
+    <div id="status" class="status inactive">
+        Estado: Inactivo
+    </div>
+
+    <div id="editor" class="editor" contenteditable="true" 
+         data-placeholder="Escribe algo para probar la corrección..."></div>
+
+    <div id="suggestions" class="suggestions-panel">
+        <div class="suggestion-content"></div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const editor = document.getElementById('editor');
+        const suggestions = document.getElementById('suggestions');
+        const status = document.getElementById('status');
+
+        // Escuchar eventos del proceso principal
+        ipcRenderer.on('text-analysis', (event, data) => {
+            highlightErrors(data.errors);
+        });
+
+        ipcRenderer.on('show-suggestions', (event, data) => {
+            showSuggestions(data.suggestions);
+        });
+
+        // Función para resaltar errores en el texto
+        function highlightErrors(errors) {
+            const content = editor.innerHTML;
+            let newContent = content;
+
+            errors.forEach(error => {
+                const regex = new RegExp(error.word, 'gi');
+                newContent = newContent.replace(regex, 
+                    `<span class="error" data-suggestion="${error.suggestion}" 
+                     data-explanation="${error.explanation}">${error.word}</span>`
+                );
+            });
+
+            editor.innerHTML = newContent;
+        }
+
+        // Función para mostrar sugerencias
+        function showSuggestions(suggestions) {
+            const content = suggestions.map(s => {
+                return s.errors.map(error => `
+                    <div class="suggestion-item" onclick="applySuggestion('${error.word}', '${error.suggestion}')">
+                        <strong>${error.word}</strong> → ${error.suggestion}
+                        <br>
+                        <small>${error.explanation}</small>
+                    </div>
+                `).join('');
+            }).join('');
+
+            suggestions.querySelector('.suggestion-content').innerHTML = content;
+            suggestions.style.display = 'block';
+        }
+
+        // Función para aplicar una sugerencia
+        function applySuggestion(word, suggestion) {
+            const content = editor.innerHTML;
+            const regex = new RegExp(`<span class="error"[^>]*>${word}</span>`, 'gi');
+            editor.innerHTML = content.replace(regex, suggestion);
+            suggestions.style.display = 'none';
+        }
+
+        // Manejar clics en errores
+        editor.addEventListener('click', (e) => {
+            if (e.target.classList.contains('error')) {
+                const suggestion = e.target.dataset.suggestion;
+                const explanation = e.target.dataset.explanation;
+                
+                suggestions.querySelector('.suggestion-content').innerHTML = `
+                    <div class="suggestion-item" onclick="applySuggestion('${e.target.textContent}', '${suggestion}')">
+                        <strong>${e.target.textContent}</strong> → ${suggestion}
+                        <br>
+                        <small>${explanation}</small>
+                    </div>
+                `;
+                
+                suggestions.style.display = 'block';
+                suggestions.style.left = e.pageX + 'px';
+                suggestions.style.top = e.pageY + 'px';
+            }
+        });
+
+        // Cerrar panel de sugerencias al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.error') && !e.target.closest('.suggestions-panel')) {
+                suggestions.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 

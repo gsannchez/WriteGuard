@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WriteGuard - Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #569cd6;
+            margin-bottom: 20px;
+        }
+        .log-container {
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 2px;
+        }
+        .log-entry.info {
+            color: #9cdcfe;
+        }
+        .log-entry.error {
+            color: #f44747;
+        }
+        .log-entry.warning {
+            color: #ce9178;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .stat-box h3 {
+            margin: 0 0 10px 0;
+            color: #569cd6;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            color: #4ec9b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WriteGuard Debug</h1>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <h3>Estado</h3>
+                <div id="capture-status" class="stat-value">Inactivo</div>
+            </div>
+            <div class="stat-box">
+                <h3>Análisis Realizados</h3>
+                <div id="analysis-count" class="stat-value">0</div>
+            </div>
+            <div class="stat-box">
+                <h3>Errores Detectados</h3>
+                <div id="error-count" class="stat-value">0</div>
+            </div>
+            <div class="stat-box">
+                <h3>Sugerencias</h3>
+                <div id="suggestion-count" class="stat-value">0</div>
+            </div>
+        </div>
+
+        <div class="log-container" id="log">
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let stats = {
+            analysisCount: 0,
+            errorCount: 0,
+            suggestionCount: 0
+        };
+
+        function updateStats() {
+            document.getElementById('analysis-count').textContent = stats.analysisCount;
+            document.getElementById('error-count').textContent = stats.errorCount;
+            document.getElementById('suggestion-count').textContent = stats.suggestionCount;
+        }
+
+        function addLogEntry(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateCaptureStatus(isActive) {
+            const status = document.getElementById('capture-status');
+            status.textContent = isActive ? 'Activo' : 'Inactivo';
+            status.style.color = isActive ? '#4ec9b0' : '#f44747';
+        }
+
+        // Escuchar eventos
+        ipcRenderer.on('debug-update', (event, data) => {
+            switch (data.type) {
+                case 'analysis':
+                    stats.analysisCount++;
+                    stats.errorCount += data.data.results.errors.length;
+                    stats.suggestionCount += data.data.results.suggestions.length;
+                    addLogEntry(`Análisis completado: ${data.data.results.errors.length} errores, ${data.data.results.suggestions.length} sugerencias`);
+                    break;
+                case 'capture-status':
+                    updateCaptureStatus(data.data.isActive);
+                    addLogEntry(`Estado de captura: ${data.data.isActive ? 'Activo' : 'Inactivo'}`);
+                    break;
+                case 'error':
+                    addLogEntry(data.data.message, 'error');
+                    break;
+            }
+            updateStats();
+        });
+    </script>
+</body>
+</html> 
