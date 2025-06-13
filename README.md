@@ -107,4 +107,4 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 
 WriteGuard Team - [@writeguard](https://twitter.com/writeguard)
 
-Link del proyecto: [https://github.com/yourusername/writeguard](https://github.com/yourusername/writeguard)
+Link del proyecto: [https://github.com/yourusername/writeguard](https://github.com/gsannchez/writeguard)
